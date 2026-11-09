@@ -1,47 +1,55 @@
- KingdomRebuilt
+# Kingdom Rebuilt
 
-Joc de strategie pe ture cu gestiunea unei cetăți și luptă tactică, dezvoltat în Godot 4 (GDScript). Acest document descrie livrabilele proiectului de licență: locația codului sursă, cerințele, pașii de compilare și pașii de instalare/lansare a aplicației.
+A turn-based strategy game that combines fortress and resource management with tactical party combat. Built in Godot 4.6 with GDScript, using the GL Compatibility renderer.
 
-1. Livrabile
+Originally developed as a bachelor's thesis at the Politehnica University of Timișoara (defended 2026); a Romanian build guide is in [docs/BUILD_RO.md](docs/BUILD_RO.md).
 
-Depozitul conține întregul cod sursă al aplicației: scene și scripturi Godot (`scenes/`, `scripts/`), resurse de date (`data/`), active grafice și audio (`assets/`), configurația proiectului (`project.godot`).
+## Gameplay
 
-Depozitul nu conține fișiere binare compilate: nu include editorul Godot, build-uri exportate (`.exe`, `.app`, `.pck`) și nici cache-ul intern de import al editorului (`.godot/`). Acestea se generează local, conform pașilor de mai jos.
+You rebuild a ruined city one turn at a time. Each turn you assign workers, upgrade buildings, recruit and train soldiers, then end the turn and deal with what comes next: enemy waves, faction events and letters from the king. Victory requires surviving 10 enemy waves, reaching dungeon level 3 and raising a set of buildings to target levels. Losing the city walls ends the run, and a lost game deletes its save (permadeath).
 
-2. Adresa repository-ului
+## Features
 
-GitLab UPT: `https://gitlab.upt.ro/sergiu.zdragon/kingdomrebuilt`
+- **City management:** 12 buildings defined as data resources (Farm, Forest, Quarry, Iron Mine, Steel Forge, Blacksmith, Market, Butchery, Barracks, Training Grounds, Tavern, House), each with worker slots, upkeep and upgrade levels. Resources are gold, food, wood, stone, iron and steel.
+- **Threat and waves:** a threat meter fills every turn and triggers an enemy wave when full. Lost waves damage walls and buildings, lower army morale and raise future threat.
+- **Soldiers:** five classes (Warrior, Knight, Archer, Rogue, Mage) with levels, stat points, morale, equipment slots and three equipped skills out of five per class. Tavern staffing affects recruit quality.
+- **Traits:** soldiers earn traits from what happens in battle (kills, damage taken and similar), checked after every fight.
+- **Crafting:** items crafted over several turns in three quality tiers (Common, Uncommon, Rare).
+- **Turn-based combat:** initiative order from speed plus a small roll, attack / defend / skill actions, critical hits, taunts, lifesteal, bosses with their own behaviour, plus auto-battle and speed toggles.
+- **Procedural dungeon:** a 10x10 grid generated per level with the spawn in the centre and the boss in the farthest room; rooms include monsters, elites, fountains, trait and gear markets and lore.
+- **Factions and story:** standing with three factions (Wardens, Iron Legion, Pale Court) drives passive bonuses, diplomacy actions with cooldowns and choice-based events. Story letters arrive at gameplay milestones.
+- **Presentation:** animated intro cinematic, first-turn guided tutorial, in-game codex, end-of-turn recap screen, crossfading music, pooled sound effects, scene fades and a pause menu with volume settings.
+- **Saves:** three save slots with autosave.
 
-Repository-ul este privat, partajat intern. Accesul se acordă la cerere coordonatorului și membrilor comisiei de evaluare (Settings → Members → Invite member, cu rol *Reporter* sau *Developer*), pentru perioada necesară evaluării.
+## Architecture
 
-3. Cerințe
+| Area | Location | Notes |
+|---|---|---|
+| Autoloads (global state) | `scripts/autoload/` | `GameState` (resources, buildings, soldiers, turns, win/loss), `CombatState` (turn order, actions, damage), `DungeonState`, `FactionState`, `FactionEvents`, `GameEvents`, `StoryManager`, `TraitChecker`, `SaveManager` |
+| Autoloads (services) | `scripts/autoload/` | `Settings`, `MusicManager`, `SFX`, `SceneFader`, `PauseMenu`, `BuildingPopup` |
+| Data resources | `data/buildings/*.tres`, `scripts/data/`, `scripts/resouces_data/` | `BuildingData`, `SoldierData`, `EnemyData`, `ItemData`, `SkillData`, `TraitData` as custom `Resource` classes; `SkillLibrary` and `TraitLibrary` hold the skill and trait catalogues |
+| Management | `scripts/management/`, `scenes/management/` | Hub screen (city view, workers, buildings, objectives), story panel, turn recap |
+| Combat | `scenes/combat/`, `scripts/combat/` | Pre-combat party selection and the battle scene (unit cards, turn order bar, log, animations) |
+| Dungeon | `scripts/dungeon/`, `scenes/dungeon/` | `DungeonMap` and `DungeonRoom` generate the grid; the map scene handles exploration and room events |
+| UI | `scripts/ui/`, `scenes/ui/` | Main menu, codex, tutorial, cinematic, victory and defeat overlays, shared theme and UI kit helpers |
+| Tests | `test/unit/` | GUT unit tests for building, soldier, enemy and dungeon map logic |
 
-- Godot Engine 4.6.x (proiectul folosește rendererul „GL Compatibility”), descărcabil gratuit de la [godotengine.org/download](https://godotengine.org/download). Nu necesită instalare, este un singur executabil portabil.
-- Sistem de operare: Windows, Linux sau macOS .
+Systems talk to each other mainly through autoload signals (for example `resources_changed`, `soldiers_changed`, `city_fallen`), so screens refresh from state instead of holding their own copies.
 
-4. Instalare
+## How to run
 
-1. Descărcați și instalați Godot Engine 4.6.x (versiunea standard, nu .NET/C#) pentru sistemul dumneavoastră de operare.
-2. Clonați repository-ul:
+1. Install Godot 4.6.x, the standard build (not .NET): [godotengine.org/download](https://godotengine.org/download).
+2. Clone the repository:
    ```
-   git clone <adresa repository-ului de la secțiunea 2>
-   cd KingdomRebuilt
+   git clone https://github.com/SergiuZdr/KingdomRebuilt.git
    ```
-5. Compilare
+3. Open Godot, choose **Import**, select `project.godot` in the cloned folder. The first import processes all assets.
+4. Press **F5** (or Play). The game starts at the main menu.
 
-GDScript este interpretat, deci nu necesită un pas de compilare separat, dar proiectul trebuie importat o singură dată de motor înainte de prima rulare. Din editor deschideți Godot, alegeți „Import”, navigați la folderul proiectului și selectați `project.godot`. La prima deschidere, editorul importă automat toate resursele.
+Run the unit tests from the command line (GUT is bundled in `addons/gut`):
 
-6. Lansare
+```
+godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gexit
+```
 
-Din editor deschideți proiectul în Godot și apăsați `F5` (sau butonul „Play” din colțul din dreapta sus). Scena principală pornește automat.
-
-
-## 8. Structura codului sursă
-
-| Folder | Conținut |
-|---|---|
-| `scenes/` | Scene Godot (`.tscn`) pentru UI, luptă, hartă de dungeon |
-| `scripts/` | Logica jocului (autoload-uri, date, sisteme de management, luptă, UI) |
-| `data/` | Resurse de date (`.tres`) pentru clădiri, unități, abilități |
-| `assets/` | Grafică, animații și audio |
-| `project.godot` | Configurația proiectului Godot |
+Runs on Windows, Linux and macOS. No build step is needed since GDScript is interpreted.
