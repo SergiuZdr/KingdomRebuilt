@@ -18,7 +18,7 @@ Depozitul nu conține fișiere binare compilate: nu include editorul Godot, buil
 1. Descărcați și instalați Godot Engine 4.6.x (versiunea standard, nu .NET/C#) pentru sistemul dumneavoastră de operare.
 2. Clonați repository-ul:
    ```
-   git clone <adresa repository-ului de la secțiunea 2>
+   git clone https://github.com/SergiuZdr/KingdomRebuilt.git
    cd KingdomRebuilt
    ```
 5. Compilare
